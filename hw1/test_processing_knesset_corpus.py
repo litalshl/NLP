@@ -57,7 +57,7 @@ class TestProtocolMethods(unittest.TestCase):
     # Make sure sentances are split properly at periods, exclamation marks, and question marks
     def test_split_into_sentences(self):
         p = Protocol("dummy.docx")
-        text = "זהו משפט ראשון. ופה המשפט השני! האם זה משפט שלישי?"
+        text = "זהו משפט ראשון. פה המשפט השני! האם זה משפט שלישי?"
         sentences = p.split_into_sentences(text)
         self.assertIsNotNone(sentences)
         self.assertIn("זהו משפט ראשון.", sentences)
