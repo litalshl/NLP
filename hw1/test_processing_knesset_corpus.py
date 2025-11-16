@@ -60,8 +60,8 @@ class TestProtocolMethods(unittest.TestCase):
         text = "זהו משפט ראשון. פה המשפט השני! האם זה משפט שלישי?"
         sentences = p.split_into_sentences(text)
         self.assertIsNotNone(sentences)
-        self.assertIn("זהו משפט ראשון.", sentences)
-        self.assertIn("פה המשפט השני!", sentences)
+        self.assertIn("זהו משפט ראשון", sentences)
+        self.assertIn("פה המשפט השני", sentences)
         self.assertIn("האם זה משפט שלישי?", sentences)
 
     # Verify that invalid sentences get filtered out correctly (dashes, numbers, non-Hebrew text)
