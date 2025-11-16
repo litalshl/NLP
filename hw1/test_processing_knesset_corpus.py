@@ -5,12 +5,12 @@ class TestProtocolMethods(unittest.TestCase):
 
     # Verify that file names are parsed correctly to extract knesset number and protocol type
     def test_parse_file_name(self):
-        p = Protocol("123vpt_25.docx")
+        p = Protocol("13_ptv_25545.docx")
         p.parse_file_name()
         self.assertEqual(p.knesset_number, 25)
         self.assertEqual(p.protocol_type, "committee")
         
-        p2 = Protocol("456mpt_10.docx")
+        p2 = Protocol("12_ptm_104543.docx")
         p2.parse_file_name()
         self.assertEqual(p2.knesset_number, 10)
         self.assertEqual(p2.protocol_type, "plenary")

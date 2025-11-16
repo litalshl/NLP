@@ -29,7 +29,7 @@ class Protocol:
     def __init__(self, file_name):
         self.file_name = file_name
         self.knesset_number = None  # Integer
-        self.protocol_type = None   # "Committee" or "Plenary"
+        self.protocol_type = None   # "committee" or "plenary"
         self.protocol_number = 1    # Default Integer
         self.protocol_chairman = ""
         self.sentences = []         # List of Sentence objects
@@ -37,31 +37,34 @@ class Protocol:
     # Extract the Knesset number and protocol_type from file name
     def parse_file_name(self):
         try:
-            base = os.path.basename(self.file_name)
-            # Accept filenames like '123vpt_25.docx' or 'something_mpt_10.docx'
-            match = re.search(r'(vpt|mpt)_(\d+)', base)
+            base = os.path.basename(self.file_name)  
+
+            # Match pattern: start with number, underscore, "ptv" or "ptm", underscore, then number
+            match = re.match(r'(\d+)_pt([vm])_(\d+)', base)
             if match:
-                protocol_code = match.group(1)
-                knesset_str = match.group(2)
-                self.knesset_number = int(knesset_str)
-                if protocol_code == "vpt":
+                self.knesset_number = int(match.group(1))  
+                protocol_code = match.group(2)            
+                if protocol_code == "v":
                     self.protocol_type = "committee"
-                elif protocol_code == "mpt":
+                elif protocol_code == "m":
                     self.protocol_type = "plenary"
                 else:
                     raise ValueError("Unknown protocol code")
             else:
-                raise ValueError("Filename pattern not matched")
+                raise ValueError("Filename does not match expected pattern")
         except Exception as e:
-            raise Exception(f"Failed parsing filename '{self.file_name}': {e}")
+            raise Exception(f"Error parsing filename '{self.file_name}': {e}")
+
 
     # Extract protocol number from beginning of text or default 1
     def extract_protocol_number(self, text):
         try:
+            # Try to find the protocol number using key words 'מספר ישיבה' or 'מספר פרוטוקול'
             match = re.search(r'מספר\s+(?:ישיבה|פרוטוקול)?\s*(\d+)', text)
             if match:
                 return int(match.group(1))
             else:
+                # Try to find any number in the first line of the text
                 first_line = text.strip().split('\n')[0]
                 number_match = re.search(r'\d+', first_line)
                 if number_match:
@@ -74,59 +77,73 @@ class Protocol:
     def extract_chairman(self, text):
         try:
             for line in text.split('\n'):
-                # skip negative expressions like 'אין יו"ר' which mean 'no chairman'
-                if re.search(r'\bאין\b', line):
+                # Skip lines that say אין יו"ר  
+                if 'אין' in line:
                     continue
-                if 'יו"ר' in line or 'יו״ר' in line or 'יו"ר' in line:
-                    # Split on colon if present, otherwise capture following text
-                    parts = re.split(r'[:]', line)
-                    if len(parts) > 1:
-                        possible_name = parts[1].strip()
+                
+                # Look for lines that mention יו"ר 
+                if 'יו"ר' in line:
+                    # If there's a colon, take the part after it
+                    if ':' in line:
+                        name = line.split(':')[1].strip()
                     else:
-                        m = re.search(r'יו["״]?ר\s+(.+)', line)
-                        possible_name = m.group(1).strip() if m else ''
-
-                    # Remove common honorifics (e.g., ח"כ, ח״כ, עו"ד, ד"ר) and punctuation
-                    possible_name = re.sub(r'^(?:ח["״]?כ|עו["״]?ד|ד["״]?ר|מר|גב)\s+', '', possible_name)
-                    possible_name = possible_name.strip(' ,()')
-                    name_parts = possible_name.split()
-                    if len(name_parts) >= 2:
-                        return ' '.join(name_parts[:2])
-                    elif len(name_parts) == 1:
-                        return name_parts[0]
+                        # Otherwise, take everything after "יו"ר"
+                        name = line.replace('יו"ר', '').strip()
+                    
+                    # Remove common titles (ח"כ, עו"ד, etc.) 
+                    name = name.replace('ח"כ ', '').replace('עו"ד ', '').replace('ד"ר ', '')
+                    
+                    # Remove extra spaces and punctuation
+                    name = name.strip(' ,.()')
+                    
+                    # If we got a name, return the first two words of it
+                    if name:
+                        words = name.split()
+                        if len(words) >= 2:
+                            return words[0] + ' ' + words[1]
+                        else:
+                            return words[0]
         except Exception:
             pass
+        
         return ""
 
-    # Extract speakers and their spoken text, and clean speaker names
+    # Extract speakers and their spoken text from the document
+    # Returns a dictionary mapping speaker names to their complete spoken text
     def extract_speakers_and_text(self, document):
-        speakers_text = {}
-        current_speaker = None
-        current_text = []
+        speakers_text = {}  # Dictionary to store speaker name -> spoken text
+        current_speaker = None  
+        current_text = []  
+        
+        # Loop through all paragraphs in the document
         for par in document.paragraphs:
             text = par.text.strip()
+            
+            # Skip empty paragraphs
             if not text:
                 continue
+            
+            # A speaker label ends with ":" and is short (assume less than 50 characters)
             if text.endswith(":") and len(text) < 50:
+                # If we were already collecting text for a speaker, save what we collected
                 if current_speaker and current_text:
                     combined_text = " ".join(current_text).strip()
                     clean_name = self._clean_speaker_name(current_speaker)
+                    # Add the speaker's text to the dictionary
                     if clean_name not in speakers_text:
                         speakers_text[clean_name] = combined_text
                     else:
+                        # If speaker already exists, append to their text
                         speakers_text[clean_name] += " " + combined_text
                     current_text = []
+                
+                # Start tracking a new speaker (remove the ":" from the end)
                 current_speaker = text[:-1]
             else:
+                # This paragraph is spoken text from the current speaker
                 if current_speaker:
                     current_text.append(text)
-        if current_speaker and current_text:
-            combined_text = " ".join(current_text).strip()
-            clean_name = self._clean_speaker_name(current_speaker)
-            if clean_name not in speakers_text:
-                speakers_text[clean_name] = combined_text
-            else:
-                speakers_text[clean_name] += " " + combined_text
+        
         return speakers_text
 
     # Clean speaker's name
@@ -212,17 +229,38 @@ class Protocol:
     # Process a single document 
     def process_single_document(self, file_path):
         try:
+            # Parse file name to set knesset_number and protocol_type first
             self.parse_file_name()
+
+            # Load the document from the given path
             document = Document(file_path)
+
+            # Join all paragraphs' text into one big string
             full_text = "\n".join([p.text for p in document.paragraphs])
+
+            # Extract protocol number from the full text
             self.protocol_number = self.extract_protocol_number(full_text)
+
+            # Extract chairman's name from the full text
             self.protocol_chairman = self.extract_chairman(full_text)
+
+            # Extract speakers and their text from document paragraphs
             speakers_text_map = self.extract_speakers_and_text(document)
+
+            # For each speaker and their full text
             for speaker, full_text in speakers_text_map.items():
+                # Split the full text into sentences
                 sentences = self.split_into_sentences(full_text)
+
+                # Clean the sentences to keep only valid ones
                 valid_sentences = self.clean_sentences(sentences)
+
+                # For each valid sentence
                 for sentence in valid_sentences:
+                    # Tokenize sentence into words/tokens
                     tokens = self.tokenize(sentence)
+
+                    # Only if sentence has 4 or more tokens, create a Sentence object
                     if len(tokens) >= 4:
                         sentence_obj = Sentence(
                             protocol_name=self.file_name,
@@ -233,9 +271,13 @@ class Protocol:
                             speaker_name=speaker,
                             sentence_text=" ".join(tokens)
                         )
+                        # Save the sentence object to the list
                         self.sentences.append(sentence_obj)
+
         except Exception as e:
+            # In case of any error, print it but continue execution
             print(f"Error processing document {file_path}: {e}")
+
 
     # Save processed sentences to a JSONL file
     def save_to_jsonl(self, output_path):
@@ -247,16 +289,27 @@ class Protocol:
 # Process all documents in input_dir and save all results combined to output_file
 def main(input_dir, output_file):
     all_sentences = []
+    # Loop over all files in the input directory
     for filename in os.listdir(input_dir):
+        # Process only .docx files
         if filename.endswith(".docx"):
+            # Create a Protocol instance for this file
             protocol = Protocol(filename)
+            # Full path to the file
             file_path = os.path.join(input_dir, filename)
+
+            # Process the document to extract sentences
             protocol.process_document(file_path)
+
+            # Add all extracted sentences to the main list
             all_sentences.extend(protocol.sentences)
-    # Save all sentences from all protocols 
+
+    # Open output file for writing JSON lines
     with open(output_file, "w", encoding="utf-8") as f:
+        # Write each sentence as one JSON line
         for sentence in all_sentences:
             f.write(json.dumps(sentence.to_dict(), ensure_ascii=False) + "\n")
+
 
 if __name__ == "__main__":
     import sys
