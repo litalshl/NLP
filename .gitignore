@@ -1,0 +1,33 @@
+# Virtual environments
+hw1/bin/
+hw1/include/
+hw1/lib/
+hw1/lib64/
+hw1/pyvenv.cfg
+venv/
+env/
+.venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+hw1/lib64
