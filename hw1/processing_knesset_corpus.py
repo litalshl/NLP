@@ -299,7 +299,7 @@ def main(input_dir, output_file):
             file_path = os.path.join(input_dir, filename)
 
             # Process the document to extract sentences
-            protocol.process_document(file_path)
+            protocol.process_single_document(file_path)
 
             # Add all extracted sentences to the main list
             all_sentences.extend(protocol.sentences)
