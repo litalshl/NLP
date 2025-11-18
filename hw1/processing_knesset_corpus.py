@@ -60,7 +60,7 @@ class Protocol:
     def extract_protocol_number(self, text):
         try:
             # Try to find the protocol number using key words 'מספר ישיבה' or 'מספר פרוטוקול'
-            match = re.search(r'מספר\s+(?:ישיבה|פרוטוקול)?\s*(\d+)', text)
+            match = re.search(r'(מספר|מס\u05F3:?)\s+(?:ישיבה|פרוטוקול)?\s*(\d+)', text)
             if match:
                 return int(match.group(1))
             else:
