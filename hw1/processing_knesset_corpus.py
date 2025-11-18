@@ -201,30 +201,24 @@ class Protocol:
     # Tokenize sentences by removing punctuation and splitting words 
     def tokenize(self, sentence):
         tokens = []
-        parts = sentence.split()
-        for part in parts:
-            # Find contiguous non-word characters at the start and end of the token part.
-            # We separate them from the "core" word so punctuation becomes its own token.
-            leading_match = re.match(r'^\W+', part)
-            trailing_match = re.search(r'\W+$', part)
+        punctuation = '.,!?;:()[]{}"\''
 
-            # Number of leading punctuation characters, and index where trailing punctuation starts
-            leading_len = len(leading_match.group(0)) if leading_match else 0
-            trailing_start = trailing_match.start() if trailing_match else len(part)
+        for char in sentence:
+            # Check if the character is a punctuation 
+            if char in punctuation:
+                tokens.append(char) 
+            # Skip spaces
+            elif char == ' ':
+                continue 
+            # For words, accumulate characters until a punctuation or space is found
+            else:
+                if tokens and tokens[-1] not in punctuation and tokens[-1] != ' ':
+                    tokens[-1] += char  
+                else:
+                    tokens.append(char)  
 
-            # If there is leading punctuation, add it as its own token
-            if leading_len > 0:
-                tokens.append(part[:leading_len])
-
-            # Extract the core word between leading and trailing punctuation
-            core_word = part[leading_len:trailing_start]
-            if core_word:
-                tokens.append(core_word)
-
-            # If there is trailing punctuation, add it as its own token
-            if trailing_start < len(part):
-                tokens.append(part[trailing_start:])
         return tokens
+
 
     # Process a single document 
     def process_single_document(self, file_path):
