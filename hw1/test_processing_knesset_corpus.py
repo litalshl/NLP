@@ -7,12 +7,12 @@ class TestProtocolMethods(unittest.TestCase):
     def test_parse_file_name(self):
         p = Protocol("13_ptv_25545.docx")
         p.parse_file_name()
-        self.assertEqual(p.knesset_number, 25)
+        self.assertEqual(p.knesset_number, 13)
         self.assertEqual(p.protocol_type, "committee")
         
         p2 = Protocol("12_ptm_104543.docx")
         p2.parse_file_name()
-        self.assertEqual(p2.knesset_number, 10)
+        self.assertEqual(p2.knesset_number, 12)
         self.assertEqual(p2.protocol_type, "plenary")
 
         p3 = Protocol("bad_filename.docx")
@@ -22,9 +22,9 @@ class TestProtocolMethods(unittest.TestCase):
     # Check that we can extract the protocol number from Hebrew text correctly
     def test_extract_protocol_number(self):
         p = Protocol("dummy.docx")
-        text = "מספר ישיבה 15\nהמשך טקסט"
+        text = "פרוטוקול מס' 140 "
         number = p.extract_protocol_number(text)
-        self.assertEqual(number, 15)
+        self.assertEqual(number, 140)
 
         text2 = "אין מספר ישיבה בפרוטוקול זה"
         number2 = p.extract_protocol_number(text2)

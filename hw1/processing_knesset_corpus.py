@@ -71,7 +71,7 @@ class Protocol:
                     return int(number_match.group(0))
         except:
             pass
-        return 1
+        return -1
 
     # Find chairman's name in text
     def extract_chairman(self, text):
