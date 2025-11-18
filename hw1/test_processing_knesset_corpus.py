@@ -28,7 +28,7 @@ class TestProtocolMethods(unittest.TestCase):
 
         text2 = "אין מספר ישיבה בפרוטוקול זה"
         number2 = p.extract_protocol_number(text2)
-        self.assertEqual(number2, 1)
+        self.assertEqual(number2, -1)
 
     # Extract the chairman's name from the protocol header text
     def test_extract_chairman(self):
